@@ -4,9 +4,15 @@ import { FileProcessingModule } from './modules/file-processing/file-processing.
 import { PaymentsModule } from './modules/payments/payments.module';
 import { DatabaseModule } from './shared/database/database.module';
 import { KafkaModule } from './shared/kafka/kafka.module';
+import { FileApiProducer } from './modules/file-api/kafka/file-api.producer';
+import { FileProcessingProducer } from './modules/file-processing/kafka/file-proccessing.producer';
+import { FileProcessingConsumer } from './modules/file-processing/kafka/file-proccessing.consumer';
+import { PaymentsConsumer } from './modules/payments/kafka/file-proccessing.consumer';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
     FileApiModule,
     FileProcessingModule,
     PaymentsModule,
@@ -14,6 +20,11 @@ import { KafkaModule } from './shared/kafka/kafka.module';
     KafkaModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    FileApiProducer,
+    FileProcessingProducer,
+    FileProcessingConsumer,
+    PaymentsConsumer,
+  ],
 })
 export class AppModule {}
