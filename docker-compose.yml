@@ -1,33 +1,9 @@
 version: '3.8'
 
 services:
-  app:
-    build: .
-    container_name: nest-app
-    restart: always
-    ports:
-      - "3000:3000"
-    depends_on:
-      - postgres
-      - kafka
-    environment:
-      - DATABASE_HOST=postgres
-      - DATABASE_PORT=5432
-      - DATABASE_USER=user
-      - DATABASE_PASSWORD=password
-      - DATABASE_NAME=billing
-      - KAFKA_BROKER=kafka:9092  # 🔹 Garante que o NestJS use o nome correto
-      - AWS_ACCESS_KEY_ID=access_key
-      - AWS_SECRET_ACCESS_KEY=secret_key
-      - AWS_REGION=us-east-1
-      - AWS_BUCKET_NAME=file-api-bucket
-      - AWS_S3_ENDPOINT=http://localstack:4566
-    networks:
-      - billing-network  # 🔹 Adicionando à rede correta
-
   postgres:
     image: postgres:13
-    container_name: postgres
+    container_name: billing
     restart: always
     environment:
       POSTGRES_USER: user
@@ -35,36 +11,28 @@ services:
       POSTGRES_DB: billing
     ports:
       - "5432:5432"
-    networks:
-      - billing-network  # 🔹 Adicionando à rede correta
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
 
   kafka:
-    image: bitnami/kafka:latest
-    restart: on-failure
+    image: confluentinc/cp-kafka:latest
     container_name: kafka
+    depends_on:
+      - zookeeper
     ports:
       - "9092:9092"
     environment:
-      - KAFKA_CFG_BROKER_ID=1
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
-      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
-      - KAFKA_CFG_NUM_PARTITIONS=3
-      - ALLOW_PLAINTEXT_LISTENER=yes
-    depends_on:
-      - zookeeper
-    networks:
-      - billing-network  # 🔹 Adicionando à rede correta
-
-  zookeeper:
-    image: bitnami/zookeeper:latest
-    container_name: zookeeper
-    ports:
-      - "2181:2181"
-    environment:
-      - ALLOW_ANONYMOUS_LOGIN=yes
-    networks:
-      - billing-network  # 🔹 Adicionando à rede correta
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
   kafka-ui:
     image: provectuslabs/kafka-ui
@@ -79,8 +47,6 @@ services:
       - KAFKA_CLUSTERS_0_NAME=billing
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
       - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
-    networks:
-      - billing-network  # 🔹 Adicionando à rede correta
 
   localstack:
     image: localstack/localstack
@@ -90,9 +56,5 @@ services:
     environment:
       - SERVICES=s3
       - DEFAULT_REGION=us-east-1
-    networks:
-      - billing-network  # 🔹 Adicionando à rede correta
-
-networks:
-  billing-network:
-    driver: bridge
+volumes:
+  postgres_data:     
