@@ -5,6 +5,7 @@ import { FileProcessingProducer } from 'src/modules/file-processing/kafka/file-p
 import { FileProcessingConsumer } from 'src/modules/file-processing/kafka/file-proccessing.consumer';
 import { FileApiProducer } from 'src/modules/file-api/kafka/file-api.producer';
 import { PaymentsConsumer } from 'src/modules/payments/kafka/file-proccessing.consumer';
+import { Partitioners } from 'kafkajs';
 
 @Module({
   imports: [
@@ -15,10 +16,12 @@ import { PaymentsConsumer } from 'src/modules/payments/kafka/file-proccessing.co
         options: {
           client: {
             clientId: 'file-processing',
-            brokers: ['localhost:9092'],
+            brokers: ['kafka:9092'],
           },
           consumer: {
             groupId: 'billing-group',
+            sessionTimeout: 30000,
+            heartbeatInterval: 5000,
           },
         },
       },
